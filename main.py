@@ -4,62 +4,85 @@ from sklearn import svm
 from sklearn import tree
 from sklearn.model_selection import train_test_split
 
+from sklearn.preprocessing import StandardScaler
+from sklearn.neural_network import MLPClassifier
+from sklearn.metrics import classification_report, confusion_matrix
+
 df = pd.read_csv('voice.csv')
-df_shuffle = df.sample(frac=1).reset_index(drop=True)
+df_shuffled = df.sample(frac=1).reset_index(drop=True) #para embralhar a base
 
-# train, test  = train_test_split (df, test_size=0.4)
-# clf = svm.SVC(kernel='linear', C=1).fit(train)
+df_features = df_shuffled.drop('label', axis=1)
+df_labels = df_shuffled['label'].values
 
-a = df_shuffle.drop('label', axis=1)
-test = df_shuffle['label'].values
+features_treino, features_teste, labels_treino, labels_teste = train_test_split (df_features, df_labels, test_size=0.4, random_state=0)
 
+# scaler = StandardScaler()
+# scaler.fit(features_treino)
+# StandardScaler(copy=True, with_mean=True, with_std=True)
+# features_treino = scaler.transform(features_treino)
+# features_teste = scaler.transform(features_teste)
 
-# clf = tree.DecisionTreeClassifier() 
-# clf = clf.fit(a, test)
+clf = svm.SVC(kernel='rbf', C=1e3)
+clf = clf.fit(features_treino, labels_treino)
 
-# arr = clf.predict(testee)
-# m = 0
-# f = 0
-# for a in arr:
-#     if a == 'male':
-#         m = m + 1
-#     else:
-#         f = f + 1
-#     print a
+resultados = clf.predict(features_teste)
 
-# print m
-# print f
-
-
-X_train, X_test, y_train, y_test = train_test_split (a, test, test_size=0.4, random_state=0)
-clf = svm.SVC(kernel='poly', C=1e3).fit(X_train, y_train)
-
-predicao = clf.predict(X_test)
-counter = 0
+i = 0
 acertos = 0
 erros = 0
-for p in predicao:
-    if p == y_test[counter]:
+for r in resultados:
+    if r == labels_teste[i]:
         acertos = acertos + 1
     else:
         erros = erros + 1
+    #print "Predict: ", r, " Expected: ", labels_teste[i]
+    i = i + 1
+print "|SVM - Final Score| - ", (acertos*100)/resultados.size, "%"
+print "Acertos: ", acertos, "   Erros: ", erros, "  Total: ", resultados.size, "  Score:", clf.score(features_teste, labels_teste)
 
-    # print "disse: ", p
-    # print "certo: ", y_test[counter]
-    counter = counter + 1
+clf = tree.DecisionTreeClassifier() 
+clf = clf.fit(features_treino, labels_treino) 
 
-print clf.score(X_test, y_test)
-print "TOTAL ACERTOS: ", acertos
-print "TOTAL ERROS: ", erros
+resultados = clf.predict(features_teste)
 
+i = 0
+acertos = 0
+erros = 0
+for r in resultados:
+    if r == labels_teste[i]:
+        acertos = acertos + 1
+    else:
+        erros = erros + 1
+    #print "Predict: ", r, " Expected: ", labels_teste[i]
+    i = i + 1
+print "|TREE - Final Score| - ", (acertos*100)/resultados.size, "%"
+print "Acertos: ", acertos, "   Erros: ", erros, "  Total: ", resultados.size, "  Score:", clf.score(features_teste, labels_teste)
 
-# features = [[140, 1], [130, 1],
-#            [150, 0], [170, 0]]
-# labels = [0, 0, 1, 1] # 0 e maca e 1 e laranja
+scaler = StandardScaler()
+scaler.fit(features_treino)
+StandardScaler(copy=True, with_mean=True, with_std=True)
+features_treino = scaler.transform(features_treino)
+features_teste = scaler.transform(features_teste)
 
-# # o classificador encontra padroes nos dados de treinamento
-# clf = tree.DecisionTreeClassifier() # instancia do classificador
-# clf = clf.fit(features, labels) # fit encontra padroes nos dados
+mlp = MLPClassifier(hidden_layer_sizes=(30,30,30))
+mlp.fit(features_treino, labels_treino)
+MLPClassifier(activation='relu', alpha=0.0001, batch_size='auto', beta_1=0.9, beta_2=0.999, early_stopping=False, epsilon=1e-08,
+            hidden_layer_sizes=(30,30,30), learning_rate='constant', learning_rate_init=0.001, max_iter=200, momentum=0.9,
+            nesterovs_momentum=True, power_t=0.5, random_state=None, shuffle=True, solver='adam', tol=0.0001, validation_fraction=0.1,
+            verbose=False, warm_start=False)
 
-# # iremos utilizar para classificar uma nova fruta
-# print(clf.predict([[150, 0]]))
+resultados = mlp.predict(features_teste)
+
+i = 0
+acertos = 0
+erros = 0
+for r in resultados:
+    if r == labels_teste[i]:
+        acertos = acertos + 1
+    else:
+        erros = erros + 1
+    #print "Predict: ", r, " Expected: ", labels_teste[i]
+    i = i + 1
+print "|REDE NEURAL - Final Score| - ", (acertos*100)/resultados.size, "%"
+print classification_report(labels_teste, resultados)
+print "Acertos: ", acertos, "   Erros: ", erros, "  Total: ", resultados.size#, "  Score:", clf.score(features_teste, labels_teste)
